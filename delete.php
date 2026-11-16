@@ -3,6 +3,13 @@ session_start();
 
 require __DIR__ . '/config/database.php';
 
+$_SESSION['role'] ??= 'admin';   
+if ($_SESSION['role'] !== 'admin') {
+    $_SESSION['flash'] = ['tipe' => 'error', 'pesan' => 'Anda tidak memiliki izin menghapus data.'];
+    header('Location: index.php');
+    exit;
+}
+
 // 1. Validasi Metode Request (Hanya izinkan POST)
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     $_SESSION['flash'] = [
