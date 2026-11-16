@@ -36,7 +36,7 @@ $mhs = $pdo->query(
     <p><label>Tahun ajaran<br>
         <input name="tahun_ajaran" value="2026/2027" placeholder="2026/2027"></label></p>
 
-    <p>Kode mata kuliah (valid: IF201, IF202, IF203. Coba kode salah: IF999)<br>
+    <p>Kode mata kuliah (valid: IF201, IF202, IF203)<br>
         <input name="kode_mk[]" value="IF201"><br>
         <input name="kode_mk[]" value="IF202"><br>
         <input name="kode_mk[]" value=""></p>
