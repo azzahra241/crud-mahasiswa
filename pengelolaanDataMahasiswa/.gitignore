@@ -1,0 +1,12 @@
+# Log debugging aplikasi (Slide 33: log menyimpan detail debugging)
+logs/*.log
+
+# Konfigurasi lokal database jika berbeda per mesin anggota
+config/database.local.php
+
+# File sistem & editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
