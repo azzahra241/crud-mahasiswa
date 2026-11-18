@@ -7,7 +7,9 @@ $url = static fn (string $path): string => function_exists('appUrl') ? appUrl($p
 
 $rows = isset($rows) && is_array($rows) ? $rows : [];
 $errors = isset($errors) && is_array($errors) ? $errors : [];
-$successMessage = $success ?? ($flash['success'] ?? null);
+$flashData = isset($flash) && is_array($flash) ? $flash : [];
+$flashMessage = $success ?? ($flashData['pesan'] ?? ($flashData['success'] ?? null));
+$flashType = ($flashData['tipe'] ?? 'ok') === 'err' ? 'error' : 'success';
 ?>
 <!doctype html>
 <html lang="id">
@@ -21,7 +23,6 @@ $successMessage = $success ?? ($flash['success'] ?? null);
     <header class="topbar">
         <div class="topbar-inner">
             <a class="brand" href="<?= $e($url('/mahasiswa')) ?>">Sistem Akademik</a>
-            <span class="brand-sub">Pengelolaan Data Mahasiswa (MVC)</span>
         </div>
     </header>
 
@@ -35,9 +36,9 @@ $successMessage = $success ?? ($flash['success'] ?? null);
                 <a class="btn btn-primary" href="<?= $e($url('/mahasiswa/create')) ?>">+ Tambah Mahasiswa</a>
             </div>
 
-            <?php if (is_string($successMessage) && $successMessage !== ''): ?>
-                <div class="alert alert-success" role="status">
-                    <?= $e($successMessage) ?>
+            <?php if (is_string($flashMessage) && $flashMessage !== ''): ?>
+                <div class="alert alert-<?= $e($flashType) ?>" role="status">
+                    <?= $e($flashMessage) ?>
                 </div>
             <?php endif; ?>
 

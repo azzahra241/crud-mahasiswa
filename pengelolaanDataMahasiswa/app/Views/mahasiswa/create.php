@@ -20,7 +20,6 @@ $old = isset($old) && is_array($old) ? $old : [];
     <header class="topbar">
         <div class="topbar-inner">
             <a class="brand" href="<?= $e($url('/mahasiswa')) ?>">Sistem Akademik</a>
-            <span class="brand-sub">Pengelolaan Data Mahasiswa (MVC)</span>
         </div>
     </header>
 
