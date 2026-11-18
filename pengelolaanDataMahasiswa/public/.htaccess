@@ -1,0 +1,10 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Layani file atau direktori statis secara langsung (CSS, JS, gambar)
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Arahkan seluruh request lain ke Front Controller (public/index.php)
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
