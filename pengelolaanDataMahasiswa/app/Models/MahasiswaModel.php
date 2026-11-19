@@ -67,19 +67,21 @@ class MahasiswaModel
         string $nama,
         ?string $email = null,
         ?string $prodi = null,
-        ?int $angkatan = null
+        ?int $angkatan = null,
+        ?float $ipk = null
     ): void {
         try {
             $stmt = $this->pdo->prepare(
-                'INSERT INTO mahasiswa (nim, nama, email, prodi, angkatan)
-                 VALUES (:nim, :nama, :email, :prodi, :angkatan)'
+                'INSERT INTO mahasiswa (nim, nama, email, prodi, angkatan, ipk)
+                 VALUES (:nim, :nama, :email, :prodi, :angkatan, :ipk)'
             );
             $stmt->execute([
                 'nim'      => $nim,
                 'nama'     => $nama,
-                'email'    => $email,
-                'prodi'    => $prodi,
-                'angkatan' => $angkatan,
+                'email'    => $email ?? '',
+                'prodi'    => $prodi ?? '',
+                'angkatan' => $angkatan ?? (int) date('Y'),
+                'ipk'      => $ipk ?? 0.0,
             ]);
         } catch (PDOException $e) {
             $this->logError('create', $e);
@@ -93,7 +95,8 @@ class MahasiswaModel
         string $nama,
         ?string $email = null,
         ?string $prodi = null,
-        ?int $angkatan = null
+        ?int $angkatan = null,
+        ?float $ipk = null
     ): void {
         try {
             $stmt = $this->pdo->prepare(
@@ -102,7 +105,8 @@ class MahasiswaModel
                      nama = :nama,
                      email = COALESCE(:email, email),
                      prodi = COALESCE(:prodi, prodi),
-                     angkatan = COALESCE(:angkatan, angkatan)
+                     angkatan = COALESCE(:angkatan, angkatan),
+                     ipk = COALESCE(:ipk, ipk)
                  WHERE id = :id AND deleted_at IS NULL'
             );
             $stmt->execute([
@@ -111,6 +115,7 @@ class MahasiswaModel
                 'email'    => $email,
                 'prodi'    => $prodi,
                 'angkatan' => $angkatan,
+                'ipk'      => $ipk,
                 'id'       => $id,
             ]);
         } catch (PDOException $e) {
@@ -138,6 +143,11 @@ class MahasiswaModel
     public function hasKrs(int $id): bool
     {
         try {
+            $tableCheck = $this->pdo->query("SHOW TABLES LIKE 'krs'")->fetch();
+            if ($tableCheck === false) {
+                return false;
+            }
+
             $stmt = $this->pdo->prepare(
                 'SELECT COUNT(*)
                  FROM krs k

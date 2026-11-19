@@ -7,6 +7,7 @@ $url = static fn (string $path): string => function_exists('appUrl') ? appUrl($p
 
 $errors = isset($errors) && is_array($errors) ? $errors : [];
 $old = isset($old) && is_array($old) ? $old : [];
+$csrfToken = (string) ($_SESSION['csrf_token'] ?? '');
 ?>
 <!doctype html>
 <html lang="id">
@@ -45,6 +46,7 @@ $old = isset($old) && is_array($old) ? $old : [];
             <?php endif; ?>
 
             <form method="post" action="<?= $e($url('/mahasiswa')) ?>" novalidate>
+                <input type="hidden" name="csrf_token" value="<?= $e($csrfToken) ?>">
                 <div class="form-group">
                     <label class="form-label" for="nim">NIM <span class="required-mark">*</span></label>
                     <input
@@ -107,11 +109,27 @@ $old = isset($old) && is_array($old) ? $old : [];
                         id="angkatan"
                         name="angkatan"
                         type="number"
-                        min="2000"
-                        max="2099"
+                        min="1901"
+                        max="2155"
                         value="<?= $e($old['angkatan'] ?? '2026') ?>"
                         placeholder="2026"
                     >
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="ipk">IPK</label>
+                    <input
+                        class="form-control"
+                        id="ipk"
+                        name="ipk"
+                        type="number"
+                        min="0"
+                        max="4"
+                        step="0.01"
+                        value="<?= $e($old['ipk'] ?? '0.00') ?>"
+                        placeholder="0.00"
+                    >
+                    <p class="form-hint">Rentang nilai IPK antara 0.00 hingga 4.00.</p>
                 </div>
 
                 <div class="form-actions">

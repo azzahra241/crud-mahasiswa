@@ -127,6 +127,7 @@ $router->get('/', static function (): void {
 $router->get('/mahasiswa', ['MahasiswaController', 'index']);
 $router->get('/mahasiswa/create', ['MahasiswaController', 'create']);
 $router->post('/mahasiswa', ['MahasiswaController', 'store']);
+$router->post('/mahasiswa/role', ['MahasiswaController', 'switchRole']);
 $router->get('/mahasiswa/{id}/edit', ['MahasiswaController', 'edit']);
 $router->post('/mahasiswa/{id}/update', ['MahasiswaController', 'update']);
 $router->post('/mahasiswa/{id}/delete', ['MahasiswaController', 'delete']);

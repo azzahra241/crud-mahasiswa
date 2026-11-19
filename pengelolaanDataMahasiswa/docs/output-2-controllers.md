@@ -20,7 +20,7 @@ Sesuai dengan prinsip **Separation of Concerns (SoC)** pada Slide 11, 12, dan 32
 
 ## 2. Struktur Class & Dependency Injection
 
-File: [`app/Controllers/MahasiswaController.php`](file:///c:/Users/ASUS/Documents/GitHub/crud-mahasiswa/pengelolaanDataMahasiswa/app/Controllers/MahasiswaController.php)
+File: [`app/Controllers/MahasiswaController.php`](../app/Controllers/MahasiswaController.php)
 
 ```php
 final class MahasiswaController

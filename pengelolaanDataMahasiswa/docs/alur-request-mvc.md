@@ -164,7 +164,8 @@ Seluruh rute masuk melalui *entry point* tunggal `public/index.php` dan dipetaka
 | 5 | `GET` | `/mahasiswa/{id}/edit` | `MahasiswaController::edit(int $id)` | `{id}` (`\d+`) | Memuat data awal berdasarkan `id` dan menampilkan form edit | `404` jika `{id}` bukan angka atau record tidak ditemukan |
 | 6 | `POST` | `/mahasiswa/{id}/update` | `MahasiswaController::update(int $id)` | `{id}` (`\d+`) | Validasi input & keunikan NIM → update data → Redirect `302` ke `/mahasiswa` | Render ulang form edit jika input kosong/duplikat; `404` jika data tidak ada |
 | 7 | `POST` | `/mahasiswa/{id}/delete` | `MahasiswaController::delete(int $id)` | `{id}` (`\d+`) | Cek otorisasi → hapus data (soft/hard delete) → Redirect `302` ke `/mahasiswa` | `403`/penolakan jika bukan pengguna berwenang; `405` jika diakses dengan `GET` |
-| 8 | `*` | Rute lain yang tidak terdaftar | `renderHttpError(404, ...)` | - | - | HTTP `404` halaman error aman tanpa detail teknis |
+| 8 | `POST` | `/mahasiswa/role` | `MahasiswaController::switchRole()` | - | Mengubah mode peran sesi (`admin` / `guest`) untuk simulasi otorisasi → Redirect `302` ke `/mahasiswa` | Flash error jika nilai role tidak valid; `405` jika diakses dengan `GET` |
+| 9 | `*` | Rute lain yang tidak terdaftar | `renderHttpError(404, ...)` | - | - | HTTP `404` halaman error aman tanpa detail teknis |
 
 ---
 
