@@ -9,7 +9,11 @@ $rows = isset($rows) && is_array($rows) ? $rows : [];
 $errors = isset($errors) && is_array($errors) ? $errors : [];
 $flashData = isset($flash) && is_array($flash) ? $flash : [];
 $flashMessage = $success ?? ($flashData['pesan'] ?? ($flashData['success'] ?? null));
-$flashType = ($flashData['tipe'] ?? 'ok') === 'err' ? 'error' : 'success';
+$flashType = in_array(($flashData['tipe'] ?? 'ok'), ['err', 'error'], true) ? 'error' : 'success';
+$currentRole = isset($currentRole) && is_string($currentRole) ? $currentRole : ($_SESSION['role'] ?? 'admin');
+$csrfToken = (string) ($_SESSION['csrf_token'] ?? '');
+$isAdmin = $currentRole === 'admin';
+$targetRole = $isAdmin ? 'guest' : 'admin';
 ?>
 <!doctype html>
 <html lang="id">
@@ -23,6 +27,18 @@ $flashType = ($flashData['tipe'] ?? 'ok') === 'err' ? 'error' : 'success';
     <header class="topbar">
         <div class="topbar-inner">
             <a class="brand" href="<?= $e($url('/mahasiswa')) ?>">Sistem Akademik</a>
+            <div class="role-switcher">
+                <span class="role-badge <?= $isAdmin ? 'role-badge-admin' : 'role-badge-guest' ?>">
+                    <?= $isAdmin ? 'Mode: Admin (Berwenang Hapus)' : 'Mode: Tamu (Tanpa Hak Hapus)' ?>
+                </span>
+                <form class="inline-form" method="post" action="<?= $e($url('/mahasiswa/role')) ?>">
+                    <input type="hidden" name="csrf_token" value="<?= $e($csrfToken) ?>">
+                    <input type="hidden" name="role" value="<?= $e($targetRole) ?>">
+                    <button class="btn btn-sm btn-topbar" type="submit">
+                        <?= $isAdmin ? 'Simulasi Tamu' : 'Kembali ke Admin' ?>
+                    </button>
+                </form>
+            </div>
         </div>
     </header>
 
@@ -88,6 +104,7 @@ $flashType = ($flashData['tipe'] ?? 'ok') === 'err' ? 'error' : 'success';
                                         <div class="actions">
                                             <a class="btn btn-sm btn-edit" href="<?= $e($url('/mahasiswa/' . $id . '/edit')) ?>">Edit</a>
                                             <form class="inline-form" method="post" action="<?= $e($url('/mahasiswa/' . $id . '/delete')) ?>" onsubmit="return confirm('Yakin ingin menghapus data mahasiswa ini?');">
+                                                <input type="hidden" name="csrf_token" value="<?= $e($csrfToken) ?>">
                                                 <button class="btn btn-sm btn-danger" type="submit">Hapus</button>
                                             </form>
                                         </div>

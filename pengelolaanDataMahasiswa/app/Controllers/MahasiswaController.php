@@ -43,10 +43,11 @@ final class MahasiswaController
         $old = $_SESSION['old'] ?? [];
         unset($_SESSION['errors'], $_SESSION['old']);
 
-        // 4. Siapkan token CSRF untuk form di halaman index (jika ada form create di index)
+        // 4. Siapkan token CSRF dan role simulasi untuk form di halaman index
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
+        $currentRole = $_SESSION['role'] ?? 'admin';
 
         // 5. Muat View (Slide 17, 19)
         $viewFile = APP_ROOT . '/app/Views/mahasiswa/index.php';
@@ -242,7 +243,7 @@ final class MahasiswaController
         // 2. Validasi CSRF Token
         $this->validateCsrf();
 
-        // 3. Pastikan record mahasiswa ada sebelum dihapus
+        // 3. Pastikan record mahasiswa ada dan tidak terikat data KRS sebelum dihapus
         $mahasiswa = $this->model->find($id);
         if ($mahasiswa === null) {
             $_SESSION['flash'] = [
@@ -253,14 +254,53 @@ final class MahasiswaController
             exit;
         }
 
+        $namaMhs = (string) ($mahasiswa['nama'] ?? 'NIM ' . $mahasiswa['nim']);
+        if ($this->model->hasKrs($id)) {
+            $_SESSION['flash'] = [
+                'tipe' => 'error',
+                'pesan' => 'Data ' . $namaMhs . ' tidak dapat dihapus karena masih memiliki data KRS.',
+            ];
+            header('Location: ' . appUrl('/mahasiswa'));
+            exit;
+        }
+
         // 4. Panggil Model untuk menjalankan penghapusan data (soft/hard delete di Model)
         $this->model->delete($id);
 
         // 5. Pola PRG: Beri feedback dan redirect ke daftar mahasiswa (Slide 25)
-        $namaMhs = (string) ($mahasiswa['nama'] ?? 'NIM ' . $mahasiswa['nim']);
         $_SESSION['flash'] = [
             'tipe' => 'ok',
             'pesan' => 'Data mahasiswa (' . $namaMhs . ') berhasil dihapus.',
+        ];
+
+        header('Location: ' . appUrl('/mahasiswa'));
+        exit;
+    }
+
+    /**
+     * Mengganti mode peran sesi (Admin vs Tamu) untuk simulasi otorisasi aksi hapus.
+     * Rute HTTP: POST /mahasiswa/role
+     */
+    public function switchRole(): void
+    {
+        $this->validateCsrf();
+
+        $role = trim((string) ($_POST['role'] ?? ''));
+        if (!in_array($role, ['admin', 'guest'], true)) {
+            $_SESSION['flash'] = [
+                'tipe' => 'error',
+                'pesan' => 'Pilihan peran tidak valid.',
+            ];
+            header('Location: ' . appUrl('/mahasiswa'));
+            exit;
+        }
+
+        $_SESSION['role'] = $role;
+        $_SESSION['flash'] = [
+            'tipe' => 'ok',
+            'pesan' => $role === 'admin'
+                ? 'Mode akses diubah ke Admin (berwenang menghapus data).'
+                : 'Mode akses diubah ke Tamu (tidak berwenang menghapus data).',
         ];
 
         header('Location: ' . appUrl('/mahasiswa'));
@@ -293,41 +333,63 @@ final class MahasiswaController
     }
 
     /**
-     * Memvalidasi token CSRF jika field csrf_token dikirimkan oleh form.
-     * Mencegah serangan CSRF bila View menyertakan input hidden csrf_token,
-     * serta tetap ramah integrasi bila rekan tim menggunakan form minimalis.
+     * Memvalidasi token CSRF pada request POST.
+     * Jika session memiliki csrf_token (akses via form browser), token wajib dikirim dan cocok.
+     * Tetap menolak apabila csrf_token dikirim dengan nilai tidak valid.
      */
     private function validateCsrf(): void
     {
-        if (isset($_POST['csrf_token']) && !empty($_SESSION['csrf_token'])) {
-            if (!hash_equals((string) $_SESSION['csrf_token'], (string) $_POST['csrf_token'])) {
-                renderHttpError(
-                    403,
-                    'Token Keamanan Tidak Valid',
-                    'Permintaan ditolak demi keamanan (Token CSRF tidak valid atau sudah kadaluarsa).'
-                );
-                exit;
-            }
+        $hasSessionToken = !empty($_SESSION['csrf_token']);
+        $hasPostToken = isset($_POST['csrf_token']);
+
+        if (!$hasSessionToken && !$hasPostToken) {
+            return;
+        }
+
+        if (
+            !$hasSessionToken
+            || !$hasPostToken
+            || !hash_equals((string) $_SESSION['csrf_token'], (string) $_POST['csrf_token'])
+        ) {
+            renderHttpError(
+                403,
+                'Token Keamanan Tidak Valid',
+                'Permintaan ditolak demi keamanan (Token CSRF tidak valid atau sudah kadaluarsa).'
+            );
+            exit;
         }
     }
 
     /**
      * Mengambil dan membersihkan input form dari POST data.
+     * Field opsional yang tidak dikirim pada form bernilai null agar tidak menimpa data lama saat update.
      *
-     * @return array{id?: int, nim: string, nama: string, email: string, prodi: string, angkatan: int, ipk: float}
+     * @return array{id?: int, nim: string, nama: string, email: ?string, prodi: ?string, angkatan: int|false|null, ipk: float|false|null}
      */
     private function extractFormData(): array
     {
         $nim = trim((string) ($_POST['nim'] ?? ''));
         $nama = trim((string) ($_POST['nama'] ?? ''));
-        $email = trim((string) ($_POST['email'] ?? ''));
-        $prodi = trim((string) ($_POST['prodi'] ?? ''));
-        $angkatan = isset($_POST['angkatan']) && $_POST['angkatan'] !== ''
-            ? (int) $_POST['angkatan']
-            : (int) date('Y');
-        $ipk = isset($_POST['ipk']) && $_POST['ipk'] !== ''
-            ? (float) $_POST['ipk']
-            : 0.0;
+        $email = array_key_exists('email', $_POST) ? trim((string) $_POST['email']) : null;
+        $prodi = array_key_exists('prodi', $_POST) ? trim((string) $_POST['prodi']) : null;
+
+        $angkatan = null;
+        if (array_key_exists('angkatan', $_POST)) {
+            $angkatanRaw = trim((string) $_POST['angkatan']);
+            if ($angkatanRaw !== '') {
+                $parsed = filter_var($angkatanRaw, FILTER_VALIDATE_INT);
+                $angkatan = $parsed === false ? false : $parsed;
+            }
+        }
+
+        $ipk = null;
+        if (array_key_exists('ipk', $_POST)) {
+            $ipkRaw = trim((string) $_POST['ipk']);
+            if ($ipkRaw !== '') {
+                $parsed = filter_var($ipkRaw, FILTER_VALIDATE_FLOAT);
+                $ipk = $parsed === false ? false : $parsed;
+            }
+        }
 
         return [
             'nim' => $nim,
@@ -341,7 +403,7 @@ final class MahasiswaController
 
     /**
      * Memvalidasi input mahasiswa di batas request (Slide 26, 34).
-     * Aturan: NIM & Nama wajib diisi; validasi panjang string & format.
+     * Aturan: NIM & Nama wajib diisi; validasi panjang string, tahun angkatan & format.
      *
      * @param array<string, mixed> $payload
      * @return array<string, string> Daftar error per field
@@ -366,15 +428,30 @@ final class MahasiswaController
             $errors['nama'] = 'Nama lengkap maksimal 100 karakter.';
         }
 
-        // 3. Validasi opsional jika field email diisi
-        $email = (string) ($payload['email'] ?? '');
-        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors['email'] = 'Format alamat email tidak valid.';
+        // 3. Validasi opsional email & prodi
+        $email = $payload['email'] ?? null;
+        if (is_string($email) && $email !== '') {
+            if (strlen($email) > 120) {
+                $errors['email'] = 'Alamat email maksimal 120 karakter.';
+            } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $errors['email'] = 'Format alamat email tidak valid.';
+            }
         }
 
-        // 4. Validasi opsional IPK (0.00 - 4.00)
-        $ipk = (float) ($payload['ipk'] ?? 0.0);
-        if ($ipk < 0.0 || $ipk > 4.0) {
+        $prodi = $payload['prodi'] ?? null;
+        if (is_string($prodi) && strlen($prodi) > 80) {
+            $errors['prodi'] = 'Program studi maksimal 80 karakter.';
+        }
+
+        // 4. Validasi opsional angkatan (rentang tipe YEAR MySQL: 1901 - 2155)
+        $angkatan = $payload['angkatan'] ?? null;
+        if ($angkatan === false || (is_int($angkatan) && ($angkatan < 1901 || $angkatan > 2155))) {
+            $errors['angkatan'] = 'Tahun angkatan harus berupa angka antara 1901 hingga 2155.';
+        }
+
+        // 5. Validasi opsional IPK (0.00 - 4.00)
+        $ipk = $payload['ipk'] ?? null;
+        if ($ipk === false || (is_float($ipk) && ($ipk < 0.0 || $ipk > 4.0))) {
             $errors['ipk'] = 'Nilai IPK harus berada pada rentang 0.00 hingga 4.00.';
         }
 
@@ -397,6 +474,15 @@ final class MahasiswaController
         ?array $mahasiswa = null
     ): void {
         $old = $payload;
+        if (($old['angkatan'] ?? null) === false) {
+            $old['angkatan'] = (string) ($_POST['angkatan'] ?? '');
+        }
+        if ($old['ipk'] === false) {
+            $old['ipk'] = (string) ($_POST['ipk'] ?? '');
+        }
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
 
         if ($formType === 'create') {
             $createView = APP_ROOT . '/app/Views/mahasiswa/create.php';
@@ -409,6 +495,7 @@ final class MahasiswaController
             $indexView = APP_ROOT . '/app/Views/mahasiswa/index.php';
             if (is_file($indexView)) {
                 $rows = $this->model->all();
+                $currentRole = $_SESSION['role'] ?? 'admin';
                 require $indexView;
                 return;
             }

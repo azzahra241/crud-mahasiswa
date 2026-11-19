@@ -15,6 +15,8 @@ $namaValue = $old['nama'] ?? ($mahasiswa['nama'] ?? '');
 $emailValue = $old['email'] ?? ($mahasiswa['email'] ?? '');
 $prodiValue = $old['prodi'] ?? ($mahasiswa['prodi'] ?? '');
 $angkatanValue = $old['angkatan'] ?? ($mahasiswa['angkatan'] ?? '2026');
+$ipkValue = $old['ipk'] ?? ($mahasiswa['ipk'] ?? '0.00');
+$csrfToken = (string) ($_SESSION['csrf_token'] ?? '');
 ?>
 <!doctype html>
 <html lang="id">
@@ -53,6 +55,7 @@ $angkatanValue = $old['angkatan'] ?? ($mahasiswa['angkatan'] ?? '2026');
             <?php endif; ?>
 
             <form method="post" action="<?= $e($url('/mahasiswa/' . $id . '/update')) ?>" novalidate>
+                <input type="hidden" name="csrf_token" value="<?= $e($csrfToken) ?>">
                 <div class="form-group">
                     <label class="form-label" for="nim">NIM <span class="required-mark">*</span></label>
                     <input
@@ -111,10 +114,25 @@ $angkatanValue = $old['angkatan'] ?? ($mahasiswa['angkatan'] ?? '2026');
                         id="angkatan"
                         name="angkatan"
                         type="number"
-                        min="2000"
-                        max="2099"
+                        min="1901"
+                        max="2155"
                         value="<?= $e($angkatanValue) ?>"
                     >
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="ipk">IPK</label>
+                    <input
+                        class="form-control"
+                        id="ipk"
+                        name="ipk"
+                        type="number"
+                        min="0"
+                        max="4"
+                        step="0.01"
+                        value="<?= $e($ipkValue) ?>"
+                    >
+                    <p class="form-hint">Rentang nilai IPK antara 0.00 hingga 4.00.</p>
                 </div>
 
                 <div class="form-actions">
